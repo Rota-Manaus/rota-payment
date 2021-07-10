@@ -1,0 +1,17 @@
+version: "3.9"
+services: 
+    nodeserver:
+        build: 
+            context: ./frontapp
+        ports: 
+            - 3000:3000
+        volumes:
+            - ./app:/usr/src/app
+    
+    nginx:
+        restart: always
+        build: 
+            context: ./nginx
+        ports: 
+            - 80:80
+            - 443:443
