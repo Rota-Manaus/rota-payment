@@ -12,6 +12,7 @@ import { LoggerConfig } from '@ioc:Adonis/Core/Logger'
 import { ProfilerConfig } from '@ioc:Adonis/Core/Profiler'
 import { ValidatorConfig } from '@ioc:Adonis/Core/Validator'
 import Application from '@ioc:Adonis/Core/Application'
+import { GNType } from '@ioc:Adonis/Core/GNType'
 
 /*
 |--------------------------------------------------------------------------
@@ -235,13 +236,19 @@ export const profiler: ProfilerConfig = {
 export const validator: ValidatorConfig = {
 }
 
-export const GNCredentials: any = {
-  sandbox: true,
-  clientIdProducao: '',
-  clientSecretProducao: '',
-  pathCertProducao: '',
-  clientIdHomologacao: 'Client_Id_9b9b760bf7b70bf4da3eb23cc13689eb86595cf9',
-  clientSecretHomologacao: 'Client_Secret_e5a7804783ef3b67fdb8f34f61869135098c6724',
-  pathCertHomologacao: Application.resourcesPath('gn-hmg-cert.p12'),
-  validateMtls: false
+export const GNConfig: GNType = {
+  sandbox: process.env.GN_SANDBOX == 'true',
+  prd: {
+    endPoint: 'https://api-pix.gerencianet.com.br',
+    clientId: 'Client_Id_68b485249f31459848f9b4eb85fa95476dd5f12f',
+    clientSecret: 'Client_Secret_5208034cb0f991b416dcd058dfb9fc51940b389d',
+    cert: Application.resourcesPath('gn-prod-cert.p12'),
+  },
+  hmg: {
+    endPoint: 'https://api-pix-h.gerencianet.com.br',
+    clientId: 'Client_Id_9b9b760bf7b70bf4da3eb23cc13689eb86595cf9',
+    clientSecret: 'Client_Secret_e5a7804783ef3b67fdb8f34f61869135098c6724',
+    cert: Application.resourcesPath('gn-hmg-cert.p12'),
+  },
+  validateMtls: true
 }

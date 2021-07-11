@@ -1,12 +1,11 @@
 import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Env from '@ioc:Adonis/Core/Env'
-import GerenciaNet from 'gn-api-sdk-node'
-import { GNCredentials } from 'Config/app'
+import GNRequest from '../../../providers/GNRequest'
 import CreateChargeValidator from 'App/Validators/CreateChargeValidator'
 
 export default class DefaultController {
 
-    private GN = new GerenciaNet(GNCredentials)
+    private GNR = new GNRequest()
 
     public async index(ctx: HttpContextContract) {
         return ctx.response.send("Payment API xa")
@@ -14,10 +13,11 @@ export default class DefaultController {
 
     public async create(ctx: HttpContextContract) {
 
+        const gn = await this.GNR.create()
         const payload = await ctx.request.validate(CreateChargeValidator)
         
         try {
-            const charge = await this.GN.pixCreateImmediateCharge({}, {
+            const charge = await gn.post('/v2/cob', {
                 calendario: {
                     expiracao: 3600
                 },
@@ -34,58 +34,56 @@ export default class DefaultController {
                 chave: Env.get('ROTA_CHAVE_PIX')
             })
             
-            const params = { id: charge.loc.id }
-            const qrcode = await this.GN.pixGenerateQRCode(params)
+            const qrcode = await gn.get(`/v2/loc/${charge.data.loc.id}/qrcode`)
 
             return ctx.response.send({
                 message: "Pagamento gerado com sucesso",
-                data: { charge, qrcode }
+                data: {
+                    charge: charge.data, 
+                    qrcode: qrcode.data
+                }
             })
         }
         catch(err) {
-            console.error(err)
-            return ctx.response.badRequest(err)
+            console.error(err.response.data || err.message)
+            return ctx.response.badRequest(err.response.data || err.message)
         }
     }
 
-    public async show(ctx: HttpContextContract) {
-        
-        const params = { txid: ctx.params.txid }
-        
+    public async show(ctx: HttpContextContract) {        
         try {
-            const res = await this.GN.pixDetailCharge(params)
-            return ctx.response.send(res)
+            const gn = await this.GNR.create()
+            const res = await gn.get(`/v2/cob/${ctx.params.txid}`)
+            return ctx.response.send(res.data)
         } 
         catch (err) {
-            console.error(err)
-            return ctx.response.send(err)
+            console.error(err.response.data || err.message)
+            return ctx.response.send(err.response.data || err.message)
         }
+    }
+
+    public validateWebhook(ctx: HttpContextContract) {
+        console.log('webhook validate')
+        return ctx.response.send("200")
     }
 
     public async configWebhook(ctx: HttpContextContract) {
-
-        const body = {
-            webhookUrl: Env.get('WEBHOOK_URL')
-        }
-
-        const params = {
-            chave: Env.get('ROTA_CHAVE_PIX')
-        }
-        console.log('body', body)
-        console.log('params', params)
         try {
-            const res = await this.GN.pixConfigWebhook(params, body)
-            return ctx.response.send(res)
+            const gn = await this.GNR.create()
+            const res = await gn.put(`/v2/webhook/${Env.get('ROTA_CHAVE_PIX')}`, {
+                webhookUrl: Env.get('GN_WEBHOOK_URL')
+            })
+            return ctx.response.send(res.data)
         }
         catch(err) {
-            console.error(err)
-            return ctx.response.badRequest(err)
+            console.error(err.response.data || err.message)
+            return ctx.response.badRequest(err.response.data || err.message)
         }
     }
 
     public async listenWebhook(ctx: HttpContextContract) {
         const data = ctx.request.body()
         console.log(data)
-        return ctx.response.send(data)
+        return ctx.response.send("200")
     }
 }

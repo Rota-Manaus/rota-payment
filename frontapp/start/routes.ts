@@ -24,5 +24,6 @@ Route.get('/', 'DefaultController.index')
 Route.post('/charges', 'DefaultController.create')
 Route.get('/charges/:txid', 'DefaultController.show')
 
+Route.post('/webhook', 'DefaultController.validateWebhook')
 Route.post('/webhook/config', 'DefaultController.configWebhook')
 Route.post('/webhook/pix', 'DefaultController.listenWebhook')
