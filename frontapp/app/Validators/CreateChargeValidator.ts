@@ -25,12 +25,12 @@ export default class CreateChargeValidator {
 	 *    ```
 	 */
   public schema = schema.create({
-	  cpf: schema.string({}, [
+	  cpf: schema.string.optional({}, [
 		//rules.regex(/(^\d{3}\.\d{3}\.\d{3}\-\d{2}$)|(^\d{2}\.\d{3}\.\d{3}\/\d{4}\-\d{2}$)/)
 		rules.regex(/^\d{11}$/)
 	  ]),
 	  valor: schema.number(),
-	  nome: schema.string(),
+	  nome: schema.string.optional(),
   })
 
 	/**

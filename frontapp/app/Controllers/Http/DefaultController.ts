@@ -2,13 +2,14 @@ import { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import Env from '@ioc:Adonis/Core/Env'
 import GNRequest from '../../../providers/GNRequest'
 import CreateChargeValidator from 'App/Validators/CreateChargeValidator'
+import axios from 'axios'
 
 export default class DefaultController {
 
     private GNR = new GNRequest()
 
     public async index(ctx: HttpContextContract) {
-        return ctx.response.send("Payment API xa")
+        return ctx.response.send("ROTA Payment API")
     }
 
     public async create(ctx: HttpContextContract) {
@@ -17,17 +18,17 @@ export default class DefaultController {
         const payload = await ctx.request.validate(CreateChargeValidator)
         
         try {
-            const charge = await gn.post('/v2/cob', {
+            let charge = await gn.post('/v2/cob', {
                 calendario: {
                     expiracao: 3600
                 },
                 valor: {
                     original: payload.valor.toFixed(2).toString()
                 },
-                devedor: {
+                /* devedor: {
                     cpf: payload.cpf,
                     nome: payload.nome
-                },
+                }, */
                 infoAdicionais: [
                     { nome: "Pagamento", valor: "ROTAM recarga" }
                 ],
@@ -37,7 +38,7 @@ export default class DefaultController {
             const qrcode = await gn.get(`/v2/loc/${charge.data.loc.id}/qrcode`)
 
             return ctx.response.send({
-                message: "Pagamento gerado com sucesso",
+                message: "Cobrança com sucesso",
                 data: {
                     charge: charge.data, 
                     qrcode: qrcode.data
@@ -62,8 +63,20 @@ export default class DefaultController {
         }
     }
 
+    public async list(ctx: HttpContextContract) {
+        try {
+            const { inicio, fim } = ctx.request.qs()
+            const gn = await this.GNR.create()
+            const res = await gn.get(`/v2/cob?inicio=${inicio}&fim=${fim}`)
+            return ctx.response.send(res.data)
+        } 
+        catch (err) {
+            console.error(err.response.data || err.message)
+            return ctx.response.send(err.response.data || err.message)
+        }
+    }
+
     public validateWebhook(ctx: HttpContextContract) {
-        console.log('webhook validate')
         return ctx.response.send("200")
     }
 
@@ -83,7 +96,20 @@ export default class DefaultController {
 
     public async listenWebhook(ctx: HttpContextContract) {
         const data = ctx.request.body()
-        console.log(data)
-        return ctx.response.send("200")
+        const pix = data.pix[0]
+
+        try {
+            const res = await axios.post(Env.get('PIX_CALLBACK_URL'), {
+                txid: pix.txid,
+                valor: pix.valor
+            })
+
+            console.log(pix)
+            return ctx.response.status(res.status).send(res.data)
+        }
+        catch(err) {
+            console.log(err.response.data || err.message)
+            return ctx.response.badRequest(err.response.data || err.message)
+        }
     }
 }

@@ -21,6 +21,7 @@
 import Route from '@ioc:Adonis/Core/Route'
 
 Route.get('/', 'DefaultController.index')
+Route.get('/charges/list', 'DefaultController.list')
 Route.post('/charges', 'DefaultController.create')
 Route.get('/charges/:txid', 'DefaultController.show')
 
